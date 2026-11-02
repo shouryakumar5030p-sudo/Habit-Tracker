@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOVEREIGN SYSTEM — RPG Daily Streak & Study HUD</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['Cinzel', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            hud: {
+              bg: '#060911',
+              surface: '#0d1322',
+              card: '#11192c',
+              border: '#1e2942',
+              cyan: '#38bdf8',
+              gold: '#f59e0b',
+              emerald: '#10b981',
+              violet: '#8b5cf6',
+              crimson: '#f43f5e'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #060911;
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.08) 0%, transparent 35%),
+        radial-gradient(circle at 88% 12%, rgba(139, 92, 246, 0.09) 0%, transparent 40%),
+        radial-gradient(circle at 50% 95%, rgba(245, 158, 11, 0.06) 0%, transparent 45%);
+      background-attachment: fixed;
+      color: #f1f5f9;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Clean custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #060911; }
+    ::-webkit-scrollbar-thumb { background: #1e2942; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+
+    /* Sleek HUD Panels */
+    .hud-panel {
+      background: rgba(13, 19, 34, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(30, 41, 66, 0.9);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+    }
+
+    .boss-hud-panel {
+      background: linear-gradient(135deg, rgba(24, 20, 36, 0.95) 0%, rgba(15, 23, 42, 0.95) 60%, rgba(40, 25, 15, 0.9) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 30px -8px rgba(245, 158, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    /* Streamlined Quest Row Transitions */
+    .quest-row {
+      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+    }
+    .quest-row:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      background-color: rgba(20, 30, 52, 0.95);
+    }
+    .quest-row.completed-row {
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, rgba(13, 19, 34, 0.85) 100%);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    /* Checkmark Pop Animation */
+    @keyframes checkPop {
+      0% { transform: scale(0.75); }
+      50% { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    .check-pop {
+      animation: checkPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Streak Pill Burst Animation on Right-Click / Increment */
+    @keyframes streakBurst {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+      40% { transform: scale(1.14); box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.55); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+    .streak-burst {
+      animation: streakBurst 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Floating XP Popup */
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(0.92); }
+      40% { opacity: 1; transform: translateY(-20px) scale(1.05); }
+      100% { opacity: 0; transform: translateY(-44px) scale(0.95); }
+    }
+    .floating-xp {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      animation: floatUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Animated XP Progress Fill */
+    @keyframes barFlow {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+    .xp-gradient-bar {
+      background: linear-gradient(90deg, #38bdf8, #8b5cf6, #10b981, #38bdf8);
+      background-size: 200% 100%;
+      animation: barFlow 5s linear infinite;
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Coffee Mana Pulse */
+    @keyframes manaPulse {
+      0% { opacity: 0.85; transform: scale(0.98); }
+      100% { opacity: 0; transform: scale(1.06); }
+    }
+    .mana-flash {
+      animation: manaPulse 0.65s ease-out forwards;
+    }
+
+    /* Remove number input spinners for sleek inline streak editing */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-14 selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- ===================================================================
+       TOP STICKY SYSTEM HUD BAR (Player Level, Global Streak, Complete Day)
+       =================================================================== -->
+  <header class="sticky top-0 z-40 bg-[#060911]/90 backdrop-blur-xl border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4">
+
+      <!-- Left: Avatar, Player Name, Rank & Level Bar -->
+      <div class="flex items-center gap-3.5 min-w-[260px] flex-1 max-w-xl">
+        <button onclick="cycleAvatar()" class="relative group shrink-0 focus:outline-none" title="Click to change Class Emblem">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-sky-400 via-violet-500 to-amber-500 p-[1.5px] shadow-lg shadow-sky-500/10">
+            <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center text-2xl sm:text-3xl group-hover:scale-105 transition">
+              <span id="heroAvatarEmoji">⚔️</span>
+            </div>
+          </div>
+          <span class="absolute -bottom-1.5 -right-1.5 bg-sky-400 text-slate-950 font-mono font-extrabold text-[10px] px-1.5 py-0.5 rounded-md border border-slate-950 shadow">
+            LV.<span id="heroLevelBadge">1</span>
+          </span>
+        </button>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5 group cursor-pointer" onclick="enableHeroNameEdit()">
+              <h1 id="heroNameDisplay" class="font-bold text-base sm:text-lg text-white tracking-tight truncate group-hover:text-sky-400 transition">
+                Shadow Monarch
+              </h1>
+              <i class="fa-solid fa-pen text-[10px] text-slate-500 group-hover:text-sky-400 transition"></i>
+            </div>
+            <input id="heroNameInput" type="text" onblur="saveHeroNameEdit()" onkeydown="if(event.key==='Enter') saveHeroNameEdit()" class="hidden bg-slate-900 border border-sky-500 rounded px-2 py-0.5 text-sm text-white font-bold outline-none w-40" />
+
+            <span id="heroRankTitle" class="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 font-semibold">
+              E-Rank Hunter
+            </span>
+          </div>
+
+          <!-- Sleek Level Progress Bar -->
+          <div class="mt-1.5">
+            <div class="flex justify-between items-center text-[11px] font-mono mb-1">
+              <span class="text-slate-400">TOTAL EXP: <strong id="statTotalXp" class="text-white">0</strong></span>
+              <span class="text-sky-400"><span id="currentLevelXp">0</span> / <span id="nextLevelXp">500</span> XP</span>
+            </div>
+            <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+              <div id="xpProgressBar" class="h-full rounded-full xp-gradient-bar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Global Daily Streak Pill + Sound + Complete Day Button -->
+      <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+
+        <!-- MASTER GLOBAL DAILY STREAK PILL (Right-Click or use +/- or click number) -->
+        <div
+          id="globalStreakPill"
+          oncontextmenu="handleGlobalStreakRightClick(event)"
+          class="flex items-center bg-slate-900/95 border border-amber-500/40 hover:border-amber-400 rounded-xl px-2.5 py-1.5 gap-2 transition shadow-inner"
+          title="Master Daily Streak • Right-click for +1 Day, or use -/+ controls"
+        >
+          <div class="flex items-center gap-1.5">
+            <span class="text-base">🔥</span>
+            <div class="leading-tight">
+              <div class="text-[9px] font-mono uppercase tracking-wider text-amber-300/80">DAILY STREAK</div>
+              <div class="flex items-center gap-1">
+                <span
+                  id="globalStreakText"
+                  onclick="promptEditStreak('global')"
+                  class="font-mono font-extrabold text-sm sm:text-base text-white hover:text-amber-300 cursor-pointer"
+                  title="Click to type exact streak number"
+                >1</span>
+                <span class="text-[11px] text-slate-400 font-medium">days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro +/- Buttons -->
+          <div class="flex items-center gap-1 pl-1.5 border-l border-slate-800">
+            <button onclick="adjustGlobalStreak(-1, event)" class="w-5 h-5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-[10px] transition" title="Decrease Global Streak (-1)">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <button onclick="adjustGlobalStreak(1, event)" class="w-5 h-5 rounded bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 flex items-center justify-center text-[10px] transition" title="Increase Global Streak (+1 Day & +50 XP)">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Browser Auto-Save Status Indicator -->
+        <div
+          id="autoSaveBadge"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono transition-all duration-300"
+          title="All checkmarks, streaks, study hours, and XP are automatically saved in your browser's localStorage"
+        >
+          <span id="autoSaveDot" class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+          <span id="autoSaveText">Auto-Saved</span>
+        </div>
+
+        <!-- Audio Mute Toggle -->
+        <button id="soundToggleBtn" onclick="toggleSound()" class="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 flex items-center justify-center transition" title="Toggle System Sound Effects">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-xs"></i>
+        </button>
+
+        <!-- Start New Day (Reset Checkmarks, Keep Streaks) Button -->
+        <button
+          onclick="completeDayAndAdvance(event)"
+          class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-sky-500/20 flex items-center gap-1.5 transition active:scale-95"
+          title="Uncheck today's completed tasks for a fresh day while keeping all your streaks, XP, and logged history intact"
+        >
+          <i class="fa-solid fa-forward-step"></i>
+          <span>Start New Day <span class="hidden md:inline font-normal text-[11px] opacity-90">(Reset Checkmarks, Keep Streaks)</span></span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       MAIN WORKSPACE CONTAINER
+       =================================================================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
+
+    <!-- 1. SUPREME BOSS QUEST BANNER: IRON WILLPOWER (SELF-MASTERY STREAK) -->
+    <section
+      id="bossQuestCard"
+      oncontextmenu="handleBossRightClick(event)"
+      class="boss-hud-panel rounded-2xl p-4 sm:p-5 relative overflow-hidden transition"
+    >
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+
+        <!-- Left Info & Milestone Pills -->
+        <div class="space-y-2 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-mono font-bold uppercase tracking-wider">
+              <i class="fa-solid fa-crown text-amber-400"></i> S-Rank Daily Boss Quest
+            </span>
+            <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+              Reward: <strong id="bossRewardBadge">+275 XP</strong> / Day
+            </span>
+            <span class="text-[11px] text-slate-400 hidden sm:inline">
+              • Right-click anywhere here for instant +1 Streak
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <h2 class="font-display font-bold text-lg sm:text-xl text-white tracking-wide">
+              Citadel of Iron Willpower — Zero Impulse / Self-Mastery
+            </h2>
+          </div>
+
+          <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Conquer your urges for a single day to claim massive bonus EXP and level up your discipline aura.
+          </p>
+
+          <!-- Compact Milestone Rank Pills -->
+          <div id="willpowerMilestoneRow" class="flex flex-wrap gap-1.5 pt-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Right: Sleek Boss Streak Controller + 1-Click Daily Claim -->
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+
+          <!-- Interactive Boss Streak Counter Box -->
+          <div
+            id="bossStreakPill"
+            oncontextmenu="handleBossRightClick(event)"
+            class="bg-slate-950/90 border border-amber-500/50 rounded-xl px-3.5 py-2.5 flex items-center gap-3 shadow-lg"
+          >
+            <div class="text-2xl sm:text-3xl">🛡️</div>
+            <div>
+              <div class="text-[10px] font-mono uppercase tracking-wider text-amber-400/90">CLEAN STREAK</div>
+              <div class="flex items-baseline gap-1">
+                <span
+                  id="bossStreakNumber"
+                  onclick="promptEditStreak('boss')"
+                  class="font-mono font-extrabold text-2xl sm:text-3xl text-white hover:text-amber-300 cursor-pointer leading-none"
+                  title="Click to type exact streak days"
+                >1</span>
+                <span class="text-xs font-mono text-slate-400">DAYS</span>
+              </div>
+            </div>
+
+            <!-- Direct Micro +/- & Reset Buttons -->
+            <div class="flex flex-col gap-1 pl-2.5 border-l border-slate-800">
+              <div class="flex items-center gap-1">
+                <button onclick="adjustBossStreak(-1, event)" class="w-6 h-6 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-xs transition" title="Decrease Boss Streak (-1 Day)">
+                  <i class="fa-solid fa-minus text-[10px]"></i>
+                </button>
+                <button onclick="adjustBossStreak(1, event)" class="w-6 h-6 rounded bg-amber-500/25 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 flex items-center justify-center text-xs transition" title="Increase Boss Streak (+1 Day & Claim XP)">
+                  <i class="fa-solid fa-plus text-[10px]"></i>
+                </button>
+              </div>
+              <button onclick="resetBossStreak(event)" class="text-[10px] font-mono text-rose-400/80 hover:text-rose-300 text-center transition" title="Reset streak to 0">
+                Reset (0d)
+              </button>
+            </div>
+          </div>
+
+          <!-- 1-Click Boss Daily Check Button -->
+          <button
+            id="bossClaimBtn"
+            onclick="toggleBossCompletedToday(event)"
+            class="h-full min-h-[60px] px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition shadow-lg"
+          >
+            <i id="bossClaimIcon" class="fa-regular fa-circle-check text-lg"></i>
+            <div class="text-left leading-tight">
+              <div id="bossClaimTitle">Claim Clean Day</div>
+              <div id="bossClaimSub" class="text-[11px] font-mono opacity-90">+275 XP & +1 Streak</div>
+            </div>
+          </button>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TWO-COLUMN CORE WORKSPACE: STREAMLINED QUEST BOARD (7 COLS) + STUDY SANCTUM (5 COLS) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- ===============================================================
+           LEFT COLUMN (7 Cols): ULTRA-CLEAN INTERACTIVE QUEST BOARD
+           =============================================================== -->
+      <section class="lg:col-span-7 hud-panel rounded-2xl p-4 sm:p-5 space-y-4">
+
+        <!-- Quest Board Header & Daily Completion Progress -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/90">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="font-display font-bold text-base sm:text-lg text-white tracking-wide">
+                DAILY QUEST LOG & STREAK BOARD
+              </h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              <span class="text-sky-300 font-medium">Left-click</span> to complete task •
+              <span class="text-amber-300 font-medium">Right-click any row/flame</span> for instant <code class="text-amber-300">+1 Streak</code>
+            </p>
+          </div>
+
+          <!-- Daily Progress Pill & Category Filter Tabs -->
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center gap-2">
+              <span class="text-[11px] font-mono text-slate-400">TODAY:</span>
+              <span id="dailyQuestProgressText" class="font-mono font-bold text-xs text-emerald-400">0/6</span>
+              <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div id="dailyQuestProgressBar" class="h-full bg-emerald-400 transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sleek Category Filter Pills -->
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex flex-wrap gap-1.5 text-xs">
+            <button onclick="setQuestFilter('all')" id="tab-all" class="px-3 py-1.5 rounded-lg font-semibold transition">All Quests</button>
+            <button onclick="setQuestFilter('morning')" id="tab-morning" class="px-3 py-1.5 rounded-lg font-semibold transition">🌅 Morning</button>
+            <button onclick="setQuestFilter('fitness')" id="tab-fitness" class="px-3 py-1.5 rounded-lg font-semibold transition">💪 Workout</button>
+            <button onclick="setQuestFilter('study')" id="tab-study" class="px-3 py-1.5 rounded-lg font-semibold transition">📚 Study</button>
+          </div>
+
+          <span class="text-[11px] font-mono text-slate-500 hidden sm:inline">
+            Click any streak number to type exact days
+          </span>
+        </div>
+
+        <!-- Streamlined Quest List -->
+        <div id="questBoardList" class="space-y-2.5">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Inline Quick-Add Quest Bar (Zero Modal Clunkiness!) -->
+        <div class="pt-3 border-t border-slate-800/80">
+          <form onsubmit="handleQuickAddQuest(event)" class="flex flex-col sm:flex-row gap-2">
+            <div class="flex-1 flex items-center bg-slate-950/90 border border-slate-800 focus-within:border-sky-500 rounded-xl px-3 py-2 transition">
+              <i class="fa-solid fa-plus text-sky-400 text-xs mr-2.5"></i>
+              <input
+                id="quickQuestTitle"
+                type="text"
+                placeholder="Add new daily quest (e.g., Solve 15 Physics Problems)..."
+                class="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-500 outline-none"
+                required
+              />
+            </div>
+
+            <div class="flex items-center gap-2">
+              <select
+                id="quickQuestCategory"
+                class="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-300 outline-none focus:border-sky-500"
+              >
+                <option value="morning">🌅 Morning</option>
+                <option value="fitness">💪 Workout</option>
+                <option value="study" selected>📚 Study</option>
+                <option value="night">🌙 Night</option>
+              </select>
+
+              <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 w-24">
+                <span class="text-[10px] font-mono text-amber-400 mr-1">+XP</span>
+                <input
+                  id="quickQuestXp"
+                  type="number"
+                  min="10"
+                  max="1000"
+                  value="80"
+                  class="w-full bg-transparent text-xs font-mono font-bold text-white outline-none text-right"
+                />
+              </div>
+
+              <button
+                type="submit"
+                class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shrink-0 shadow-md shadow-sky-500/15"
+              >
+                Add Quest
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </section>
+
+      <!-- ===============================================================
+           RIGHT COLUMN (5 Cols): STUDY SANCTUM TIMER & COFFEE MANA BOOST
+           =============================================================== -->
+      <section class="lg:col-span-5 space-y-5">
+
+        <div id="studySanctumCard" class="hud-panel rounded-2xl p-4 sm:p-5 relative overflow-hidden space-y-4">
+          <!-- Coffee Mana Flash Overlay -->
+          <div id="coffeeFlashOverlay" class="hidden absolute inset-0 bg-gradient-to-br from-amber-500/25 via-sky-500/20 to-transparent pointer-events-none rounded-2xl"></div>
+
+          <!-- Header & All-Time Hours Badge -->
+          <div class="flex items-center justify-between gap-2 pb-3 border-b border-slate-800/90">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <h3 class="font-display font-bold text-base sm:text-lg text-white tracking-wide">
+                  STUDY HOURS & ACHIEVEMENTS
+                </h3>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Set your daily bracket goal & log hours for <span class="text-amber-400 font-mono font-semibold">+120 XP/hr</span>
+              </p>
+            </div>
+
+            <!-- All-Time Total Study Hours Pill -->
+            <div class="bg-slate-950 border border-amber-500/40 rounded-xl px-3 py-1.5 text-right shrink-0">
+              <div class="text-[9px] font-mono uppercase tracking-wider text-amber-300/80">ALL-TIME LOGGED</div>
+              <div class="font-mono font-extrabold text-sm sm:text-base text-amber-400">
+                <span id="totalStudiedHoursBig">0.0</span> <span class="text-[11px] text-slate-400 font-normal">hrs</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. CUSTOM DAILY STUDY GOAL BRACKET & PROGRESS BAR -->
+          <div class="bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="text-[10px] font-mono uppercase tracking-wider text-sky-400 font-bold">
+                  DAILY STUDY GOAL BRACKET
+                </div>
+                <div class="text-xs text-slate-400">
+                  How many hours should you study today?
+                </div>
+              </div>
+
+              <!-- Interactive Bracket Setter: [ 4.0 ] hrs -->
+              <div class="flex items-center gap-1 bg-slate-900 border border-sky-500/40 rounded-xl px-2 py-1">
+                <button
+                  type="button"
+                  onclick="adjustDailyStudyGoal(-0.5)"
+                  class="w-6 h-6 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-[10px] transition"
+                  title="Decrease Daily Goal (-0.5 hr)"
+                >
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+
+                <div class="flex items-center font-mono font-bold text-sm px-1">
+                  <span class="text-sky-400 mr-1">[</span>
+                  <input
+                    id="dailyGoalBracketInput"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    max="18"
+                    value="4.0"
+                    onchange="setDailyStudyGoalDirect(this.value)"
+                    class="w-12 bg-transparent text-center text-white font-extrabold outline-none focus:text-sky-300"
+                    title="Type your custom daily study target in hours"
+                  />
+                  <span class="text-sky-400 ml-1">]</span>
+                  <span class="text-[11px] text-slate-400 ml-1">hrs</span>
+                </div>
+
+                <button
+                  type="button"
+                  onclick="adjustDailyStudyGoal(0.5)"
+                  class="w-6 h-6 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 flex items-center justify-center text-[10px] transition"
+                  title="Increase Daily Goal (+0.5 hr)"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Today's Study Hours vs Target Progress Bar -->
+            <div class="space-y-1.5">
+              <div class="flex items-baseline justify-between text-xs font-mono">
+                <span class="text-slate-300">
+                  TODAY'S PROGRESS:
+                  <strong id="todayStudiedHoursBig" class="text-sky-400 text-sm">0.0</strong>
+                  <span class="text-slate-500">/</span>
+                  <span id="studyDailyGoalText" class="text-slate-300">4.0</span> hrs
+                </span>
+                <span id="studyGoalPctLabel" class="font-bold text-sky-400">0%</span>
+              </div>
+
+              <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                <div
+                  id="todayStudyGoalBar"
+                  class="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-emerald-400 transition-all duration-500"
+                  style="width: 0%"
+                ></div>
+              </div>
+
+              <!-- Daily Goal Conquered Status Banner -->
+              <div
+                id="dailyGoalClearedBanner"
+                class="hidden mt-2 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center justify-between"
+              >
+                <span><i class="fa-solid fa-trophy text-amber-400 mr-1.5"></i>DAILY STUDY GOAL CONQUERED!</span>
+                <span class="font-bold text-amber-300">+200 BONUS XP EARNED</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. BRACKET STUDY HOURS LOGGER: [ ___ ] HRS -->
+          <form onsubmit="handleBracketStudySubmit(event)" class="bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+              <label for="bracketStudyHoursInput" class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-book-journal-whills text-sky-400"></i>
+                <span>How many hours have you studied?</span>
+              </label>
+              <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">
+                +120 XP / hr
+              </span>
+            </div>
+
+            <!-- Prominent RPG Bracket Input Row -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div class="flex items-center justify-center bg-slate-900 border-2 border-sky-500/50 focus-within:border-sky-400 rounded-xl px-3 py-2 shrink-0 shadow-inner">
+                <span class="font-mono font-extrabold text-xl text-sky-400">[</span>
+                <input
+                  id="bracketStudyHoursInput"
+                  type="number"
+                  step="0.25"
+                  min="0.25"
+                  max="18"
+                  value="1.5"
+                  required
+                  class="w-20 bg-transparent text-center font-mono font-extrabold text-xl text-white outline-none"
+                />
+                <span class="font-mono font-extrabold text-xl text-sky-400">]</span>
+                <span class="font-mono text-xs text-slate-400 ml-1.5">HRS</span>
+              </div>
+
+              <input
+                id="bracketStudyTopicInput"
+                type="text"
+                placeholder="Subject / Topic (optional, e.g., Maths, Physics)..."
+                class="flex-1 bg-slate-900 border border-slate-800 focus:border-sky-400 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none"
+              />
+            </div>
+
+            <!-- 1-Click Quick Bracket Preset Chips -->
+            <div class="flex items-center justify-between gap-1.5 flex-wrap pt-0.5">
+              <span class="text-[10px] font-mono uppercase text-slate-500">Quick Log:</span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button type="button" onclick="quickLogBracketHours(0.5, event)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 border border-slate-800 hover:border-sky-400/50 text-[11px] font-mono text-slate-300 hover:text-sky-300 transition">[+0.5h]</button>
+                <button type="button" onclick="quickLogBracketHours(1.0, event)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 border border-slate-800 hover:border-sky-400/50 text-[11px] font-mono text-slate-300 hover:text-sky-300 transition">[+1.0h]</button>
+                <button type="button" onclick="quickLogBracketHours(1.5, event)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 border border-slate-800 hover:border-sky-400/50 text-[11px] font-mono text-slate-300 hover:text-sky-300 transition">[+1.5h]</button>
+                <button type="button" onclick="quickLogBracketHours(2.0, event)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 border border-slate-800 hover:border-sky-400/50 text-[11px] font-mono text-slate-300 hover:text-sky-300 transition">[+2.0h]</button>
+                <button type="button" onclick="quickLogBracketHours(3.0, event)" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-sky-500/20 border border-slate-800 hover:border-sky-400/50 text-[11px] font-mono text-slate-300 hover:text-sky-300 transition">[+3.0h]</button>
+              </div>
+            </div>
+
+            <!-- Submit Log Button -->
+            <button
+              type="submit"
+              class="w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-slate-950 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 transition active:scale-[0.99]"
+            >
+              <i class="fa-solid fa-plus-circle"></i>
+              <span>LOG STUDY HOURS & CLAIM EXP</span>
+            </button>
+          </form>
+
+          <!-- 3. FEELING SLEEPY? EMERGENCY COFFEE MANA POTION -->
+          <div class="p-3 rounded-xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/10 border border-amber-500/40 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-lg shrink-0">
+                ☕
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-amber-300 truncate">Sleepy During Study Session?</div>
+                <div class="text-[11px] text-slate-300 truncate">Drink extra coffee to restore Mana • Today: <strong id="coffeeCountLabel" class="text-amber-300 font-mono">0</strong></div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onclick="drinkEmergencyCoffee(event)"
+              class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shrink-0 shadow-md shadow-amber-500/20 flex items-center gap-1 transition active:scale-95"
+            >
+              <i class="fa-solid fa-bolt"></i>
+              <span>+30 XP</span>
+            </button>
+          </div>
+
+          <!-- 4. STUDY ACHIEVEMENTS & TROPHIES GRID -->
+          <div class="pt-2 border-t border-slate-800/90 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-award text-amber-400 text-xs"></i>
+                <h4 class="font-display font-bold text-xs sm:text-sm text-white tracking-wide">
+                  SCHOLAR ACHIEVEMENTS
+                </h4>
+              </div>
+              <span id="studyAchievementsCounter" class="text-[11px] font-mono text-amber-300">
+                0 / 8 Unlocked
+              </span>
+            </div>
+
+            <div id="studyAchievementsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Dynamically rendered achievement badges -->
+            </div>
+          </div>
+
+          <!-- 5. RECENT STUDY LOGS (WITH UNDO / DELETE) -->
+          <div class="pt-2 border-t border-slate-800/90 space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>RECENT STUDY LOGS</span>
+              <span id="totalStudiedMinutesSub">0h 0m total</span>
+            </div>
+            <div id="studyLogHistoryList" class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- 3. SLEEK HORIZONTAL DAILY ROUTINE BLUEPRINT (Interactive 1-Click Sync) -->
+    <section class="hud-panel rounded-2xl p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-route text-sky-400 text-sm"></i>
+          <h3 class="font-display font-bold text-sm sm:text-base text-white tracking-wide">
+            DAILY CAMPAIGN TIMELINE (CLICK ANY STAGE TO TOGGLE)
+          </h3>
+        </div>
+        <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">
+          Synchronized with your Quest Board
+        </span>
+      </div>
+
+      <div id="routineBlueprintGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================
+       SLEEK INLINE-STYLE POPOVER MODAL FOR EXACT STREAK / GOAL INPUT
+       =================================================================== -->
+  <div id="quickPromptModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="hud-panel rounded-2xl max-w-sm w-full p-5 border border-sky-500/40 space-y-3.5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h4 id="quickPromptTitle" class="font-bold text-sm text-white">Set Exact Streak</h4>
+        <button onclick="closeQuickPrompt()" class="text-slate-400 hover:text-white text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p id="quickPromptDesc" class="text-xs text-slate-400"></p>
+      <input
+        id="quickPromptInput"
+        type="number"
+        min="0"
+        step="any"
+        onkeydown="if(event.key==='Enter') confirmQuickPrompt()"
+        class="w-full bg-slate-950 border border-slate-700 focus:border-sky-400 rounded-xl px-3.5 py-2 font-mono text-base text-white outline-none"
+      />
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="closeQuickPrompt()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-300">Cancel</button>
+        <button onclick="confirmQuickPrompt()" class="px-4 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-bold text-xs">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       JAVASCRIPT RPG ENGINE
+       =================================================================== -->
+  <script>
+    const STORAGE_KEY = 'sovereign_grind_rpg_v3';
+    const LEGACY_KEYS = ['sovereign_grind_rpg_v2', 'sovereign_grind_rpg_v1'];
+
+    const AVATARS = ['⚔️', '👑', '🐉', '⚡', '🛡️', '🧙‍♂️', '🔥', '🦅'];
+
+    const RANKS = [
+      { minLv: 1, title: 'E-Rank Initiate' },
+      { minLv: 3, title: 'D-Rank Striker' },
+      { minLv: 6, title: 'C-Rank Vanguard' },
+      { minLv: 10, title: 'B-Rank Scholar Knight' },
+      { minLv: 15, title: 'A-Rank Iron Commander' },
+      { minLv: 22, title: 'S-Rank Shadow Monarch' }
+    ];
+
+    const WILLPOWER_MILESTONES = [
+      { days: 1, name: 'Day 1: Spark' },
+      { days: 3, name: 'Day 3: Iron Guard' },
+      { days: 7, name: 'Day 7: Unbroken' },
+      { days: 14, name: 'Day 14: Commander' },
+      { days: 30, name: 'Day 30: Sovereign' }
+    ];
+
+    const STUDY_ACHIEVEMENTS = [
+      {
+        id: 'ach_first_log',
+        title: 'First Blood (Scholar)',
+        desc: 'Log your first study hours in the bracket',
+        icon: '📜',
+        xpReward: 100,
+        check: (s) => s.totalStudyMinutes > 0
+      },
+      {
+        id: 'ach_daily_goal',
+        title: 'Daily Target Cleared',
+        desc: 'Hit 100% of your custom daily study goal',
+        icon: '🎯',
+        xpReward: 200,
+        check: (s) => (s.todayStudyMinutes / 60) >= s.dailyStudyGoalHours
+      },
+      {
+        id: 'ach_limit_breaker',
+        title: 'Limit Breaker',
+        desc: 'Exceed your daily study goal by +1.0 hr in a day',
+        icon: '⚡',
+        xpReward: 300,
+        check: (s) => (s.todayStudyMinutes / 60) >= (s.dailyStudyGoalHours + 1)
+      },
+      {
+        id: 'ach_10h',
+        title: '10-Hour Initiate',
+        desc: 'Accumulate 10+ total hours of study',
+        icon: '🥉',
+        xpReward: 250,
+        check: (s) => (s.totalStudyMinutes / 60) >= 10
+      },
+      {
+        id: 'ach_25h',
+        title: '25-Hour Arcane Scholar',
+        desc: 'Accumulate 25+ total hours of study',
+        icon: '🥈',
+        xpReward: 400,
+        check: (s) => (s.totalStudyMinutes / 60) >= 25
+      },
+      {
+        id: 'ach_50h',
+        title: '50-Hour High Mage',
+        desc: 'Accumulate 50+ total hours of study',
+        icon: '🥇',
+        xpReward: 750,
+        check: (s) => (s.totalStudyMinutes / 60) >= 50
+      },
+      {
+        id: 'ach_100h',
+        title: '100-Hour Sovereign',
+        desc: 'Accumulate 100+ total hours of study',
+        icon: '👑',
+        xpReward: 1500,
+        check: (s) => (s.totalStudyMinutes / 60) >= 100
+      },
+      {
+        id: 'ach_coffee_mana',
+        title: 'Mana Overdrive',
+        desc: 'Drink 3+ emergency coffees when sleepy',
+        icon: '☕',
+        xpReward: 150,
+        check: (s) => (s.totalCoffeeCount || s.coffeeCountToday) >= 3
+      }
+    ];
+
+    const DEFAULT_QUESTS = [
+      {
+        id: 'q_sattu_coffee',
+        title: '1 Glass of Sattu + 1 Glass of Coffee',
+        tag: '06:30 AM • Morning Elixir',
+        xp: 70,
+        streak: 1,
+        completedToday: false,
+        repeatable: false,
+        category: 'morning',
+        icon: '🌅'
+      },
+      {
+        id: 'q_workout',
+        title: '30-Minute Post-School Workout',
+        tag: '03:30 PM • Physical Conditioning',
+        xp: 120,
+        streak: 1,
+        completedToday: false,
+        repeatable: false,
+        category: 'fitness',
+        icon: '💪'
+      },
+      {
+        id: 'q_long_study',
+        title: 'Complete Long Study Session',
+        tag: '05:00 PM • Main Campaign',
+        xp: 160,
+        streak: 1,
+        completedToday: false,
+        repeatable: false,
+        category: 'study',
+        icon: '📚'
+      },
+      {
+        id: 'q_sleepy_coffee',
+        title: 'Emergency Coffee Boost (When Sleepy in Study)',
+        tag: 'Repeatable Mana Refill',
+        xp: 30,
+        streak: 1,
+        completedToday: false,
+        repeatable: true,
+        category: 'study',
+        icon: '☕'
+      },
+      {
+        id: 'q_revision',
+        title: 'Active Recall & Practice Problems',
+        tag: '08:00 PM • Mastery Check',
+        xp: 90,
+        streak: 1,
+        completedToday: false,
+        repeatable: false,
+        category: 'study',
+        icon: '🧠'
+      },
+      {
+        id: 'q_sleep',
+        title: 'Pack Bag, Clean Desk & Sleep On Time',
+        tag: '10:30 PM • Full HP Recovery',
+        xp: 65,
+        streak: 1,
+        completedToday: false,
+        repeatable: false,
+        category: 'night',
+        icon: '🌙'
+      }
+    ];
+
+    let state = {
+      heroName: 'Shadow Vanguard',
+      avatarIndex: 0,
+      totalXp: 150,
+      globalStreak: 1,
+      willpowerStreak: 1,
+      willpowerCompletedToday: false,
+      coffeeCountToday: 0,
+      totalCoffeeCount: 0,
+      totalStudyMinutes: 0,
+      todayStudyMinutes: 0,
+      dailyStudyGoalHours: 4.0,
+      dailyGoalBonusClaimedToday: false,
+      unlockedAchievements: [],
+      studyLogs: [],
+      soundEnabled: true,
+      activeFilter: 'all',
+      editingQuestId: null,
+      lastSavedAt: null,
+      quests: JSON.parse(JSON.stringify(DEFAULT_QUESTS))
+    };
+
+    // Quick prompt callback
+    let quickPromptCallback = null;
+    let autoSavePulseTimeout = null;
+
+    /****************************************************************
+     * 1. SOUND ENGINE (CRISP WEB AUDIO SYNTH)
+     ****************************************************************/
+    let audioCtx = null;
+    function playSfx(type = 'check') {
+      if (!state.soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'check' || type === 'streak') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(type === 'streak' ? 587.33 : 523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(type === 'streak' ? 880 : 783.99, now + 0.13);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.16);
+        } else if (type === 'boss') {
+          [440, 554.37, 659.25, 880].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + i * 0.06);
+            gain.gain.setValueAtTime(0.1, now + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.06);
+            osc.stop(now + i * 0.06 + 0.22);
+          });
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      document.getElementById('soundIcon').className = state.soundEnabled
+        ? 'fa-solid fa-volume-high text-xs'
+        : 'fa-solid fa-volume-xmark text-xs text-slate-500';
+      saveState();
+    }
+
+    /****************************************************************
+     * 2. STATE LOAD / SAVE & LEVEL SYSTEM
+     ****************************************************************/
+    function loadState() {
+      try {
+        let saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          for (const k of LEGACY_KEYS) {
+            if (localStorage.getItem(k)) {
+              saved = localStorage.getItem(k);
+              break;
+            }
+          }
+        }
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state = { ...state, ...parsed };
+          if (typeof state.globalStreak !== 'number') state.globalStreak = 1;
+          if (typeof state.willpowerCompletedToday !== 'boolean') state.willpowerCompletedToday = false;
+          if (!Array.isArray(state.unlockedAchievements)) state.unlockedAchievements = [];
+          if (typeof state.totalCoffeeCount !== 'number') state.totalCoffeeCount = state.coffeeCountToday || 0;
+          if (!Array.isArray(state.quests) || state.quests.length === 0) {
+            state.quests = JSON.parse(JSON.stringify(DEFAULT_QUESTS));
+          }
+          state.quests.forEach(q => {
+            q.completedToday = Boolean(q.completedToday);
+            q.streak = typeof q.streak === 'number' && !isNaN(q.streak) ? Math.max(0, q.streak) : 0;
+            if (!q.tag) q.tag = q.timeSlot || q.desc || 'Daily Quest';
+          });
+        }
+        // Immediately persist normalized state so localStorage is always up to date
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to load saved RPG state:', e);
+      }
+    }
+
+    function saveState() {
+      try {
+        state.lastSavedAt = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        flashAutoSaveIndicator();
+      } catch (e) {
+        console.error('Failed to auto-save RPG state:', e);
+      }
+    }
+
+    function flashAutoSaveIndicator() {
+      const badge = document.getElementById('autoSaveBadge');
+      const text = document.getElementById('autoSaveText');
+      const dot = document.getElementById('autoSaveDot');
+      if (!badge || !text || !dot) return;
+
+      text.textContent = 'Auto-Saved ✓';
+      badge.classList.remove('border-emerald-500/30', 'bg-emerald-500/10');
+      badge.classList.add('border-emerald-400', 'bg-emerald-500/20');
+      dot.classList.add('scale-125');
+
+      if (autoSavePulseTimeout) clearTimeout(autoSavePulseTimeout);
+      autoSavePulseTimeout = setTimeout(() => {
+        badge.classList.add('border-emerald-500/30', 'bg-emerald-500/10');
+        badge.classList.remove('border-emerald-400', 'bg-emerald-500/20');
+        dot.classList.remove('scale-125');
+      }, 900);
+    }
+
+    function calculateLevel(totalXp) {
+      let lv = 1;
+      let rem = Math.max(0, Math.floor(totalXp));
+      let req = 500;
+      while (rem >= req) {
+        rem -= req;
+        lv++;
+        req = 500 + (lv - 1) * 150;
+      }
+      let rank = RANKS[0].title;
+      for (const r of RANKS) {
+        if (lv >= r.minLv) rank = r.title;
+      }
+      return {
+        level: lv,
+        currentXp: rem,
+        nextXp: req,
+        pct: Math.min(100, Math.round((rem / req) * 100)),
+        rank
+      };
+    }
+
+    function addXp(amount, event = null, label = '') {
+      state.totalXp = Math.max(0, Math.floor(state.totalXp + amount));
+      if (event && amount !== 0) {
+        const sign = amount > 0 ? '+' : '';
+        spawnPopup(
+          event.clientX || window.innerWidth / 2,
+          event.clientY || window.innerHeight / 2,
+          `${label} ${sign}${amount} XP`.trim(),
+          amount > 0 ? 'text-amber-300 border-amber-400/50' : 'text-rose-300 border-rose-400/40'
+        );
+      }
+      saveState();
+      renderAll();
+    }
+
+    function spawnPopup(x, y, text, colorClasses) {
+      const div = document.createElement('div');
+      div.className = `floating-xp font-mono font-extrabold text-xs sm:text-sm px-2.5 py-1 rounded-lg bg-slate-950/95 border shadow-xl ${colorClasses}`;
+      div.style.left = `${Math.max(16, Math.min(window.innerWidth - 180, x - 55))}px`;
+      div.style.top = `${Math.max(16, y - 18)}px`;
+      div.textContent = text;
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 1050);
+    }
+
+    function triggerBurstAnimation(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.classList.remove('streak-burst');
+      void el.offsetWidth;
+      el.classList.add('streak-burst');
+    }
+
+    /****************************************************************
+     * 3. EFFORTLESS STREAK SYSTEM (GLOBAL, BOSS, AND INDIVIDUAL QUESTS)
+     ****************************************************************/
+    function adjustGlobalStreak(delta, event) {
+      if (event) event.stopPropagation();
+      state.globalStreak = Math.max(0, state.globalStreak + delta);
+      triggerBurstAnimation('globalStreakPill');
+      if (delta > 0) {
+        playSfx('streak');
+        addXp(50, event, `🔥 Daily Streak ${state.globalStreak}d!`);
+      } else {
+        saveState();
+        renderAll();
+      }
+    }
+
+    function handleGlobalStreakRightClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      adjustGlobalStreak(1, event);
+    }
+
+    function getBossXpReward(streakDays) {
+      return 250 + Math.min(500, Math.max(0, streakDays) * 25);
+    }
+
+    function toggleBossCompletedToday(event) {
+      if (event) event.stopPropagation();
+      if (!state.willpowerCompletedToday) {
+        state.willpowerCompletedToday = true;
+        state.willpowerStreak += 1;
+        const reward = getBossXpReward(state.willpowerStreak);
+        playSfx('boss');
+        triggerBurstAnimation('bossStreakPill');
+        addXp(reward, event, `🛡️ Iron Will Day ${state.willpowerStreak}!`);
+      } else {
+        const reward = getBossXpReward(state.willpowerStreak);
+        state.willpowerCompletedToday = false;
+        state.willpowerStreak = Math.max(0, state.willpowerStreak - 1);
+        addXp(-reward, event, 'Undo Boss Claim');
+      }
+    }
+
+    function adjustBossStreak(delta, event) {
+      if (event) event.stopPropagation();
+      state.willpowerStreak = Math.max(0, state.willpowerStreak + delta);
+      triggerBurstAnimation('bossStreakPill');
+      if (delta > 0) {
+        const reward = getBossXpReward(state.willpowerStreak);
+        playSfx('boss');
+        addXp(reward, event, `🛡️ Willpower ${state.willpowerStreak}d!`);
+      } else {
+        saveState();
+        renderAll();
+      }
+    }
+
+    function handleBossRightClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      state.willpowerCompletedToday = true;
+      adjustBossStreak(1, event);
+    }
+
+    function resetBossStreak(event) {
+      if (event) event.stopPropagation();
+      state.willpowerStreak = 0;
+      state.willpowerCompletedToday = false;
+      triggerBurstAnimation('bossStreakPill');
+      saveState();
+      renderAll();
+    }
+
+    function toggleQuestRow(questId, event) {
+      if (event) event.stopPropagation();
+      if (state.editingQuestId === questId) return;
+
+      const q = state.quests.find(item => item.id === questId);
+      if (!q) return;
+
+      if (q.repeatable) {
+        q.completedToday = true;
+        q.streak += 1;
+        if (q.id === 'q_sleepy_coffee') {
+          state.coffeeCountToday += 1;
+          state.totalCoffeeCount = (state.totalCoffeeCount || 0) + 1;
+          checkAndUnlockStudyAchievements(event);
+        }
+        playSfx('streak');
+        addXp(q.xp, event, `${q.icon} Streak ${q.streak}d!`);
+        triggerBurstAnimation(`streak-pill-${q.id}`);
+        return;
+      }
+
+      if (!q.completedToday) {
+        q.completedToday = true;
+        q.streak += 1;
+        playSfx('check');
+        addXp(q.xp, event, `✓ ${q.icon}`);
+        triggerBurstAnimation(`streak-pill-${q.id}`);
+      } else {
+        q.completedToday = false;
+        q.streak = Math.max(0, q.streak - 1);
+        addXp(-q.xp, event, 'Unchecked');
+      }
+    }
+
+    function adjustQuestStreak(questId, delta, event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const q = state.quests.find(item => item.id === questId);
+      if (!q) return;
+
+      q.streak = Math.max(0, q.streak + delta);
+      if (delta > 0) {
+        q.completedToday = true;
+        const streakBonus = Math.round(q.xp * 0.5);
+        playSfx('streak');
+        addXp(streakBonus, event, `🔥 Streak ${q.streak}d!`);
+      } else {
+        saveState();
+        renderAll();
+      }
+      triggerBurstAnimation(`streak-pill-${q.id}`);
+    }
+
+    function handleQuestRightClick(event, questId) {
+      event.preventDefault();
+      event.stopPropagation();
+      const q = state.quests.find(item => item.id === questId);
+      if (!q) return;
+
+      q.streak += 1;
+      q.completedToday = true;
+      if (q.id === 'q_sleepy_coffee') {
+        state.coffeeCountToday += 1;
+        state.totalCoffeeCount = (state.totalCoffeeCount || 0) + 1;
+        checkAndUnlockStudyAchievements(event);
+      }
+      playSfx('streak');
+      addXp(q.xp, event, `🔥 +1 Streak (${q.streak}d)`);
+      triggerBurstAnimation(`streak-pill-${q.id}`);
+    }
+
+    function promptEditStreak(targetType, questId = null, event = null) {
+      if (event) event.stopPropagation();
+      const modal = document.getElementById('quickPromptModal');
+      const titleEl = document.getElementById('quickPromptTitle');
+      const descEl = document.getElementById('quickPromptDesc');
+      const inputEl = document.getElementById('quickPromptInput');
+
+      if (targetType === 'global') {
+        titleEl.textContent = 'Set Master Daily Streak';
+        descEl.textContent = 'Enter your exact consecutive daily consistency streak:';
+        inputEl.value = state.globalStreak;
+        quickPromptCallback = (val) => {
+          const n = parseInt(val, 10);
+          if (!isNaN(n) && n >= 0) {
+            state.globalStreak = n;
+            saveState();
+            renderAll();
+          }
+        };
+      } else if (targetType === 'boss') {
+        titleEl.textContent = 'Set Iron Willpower Streak (Days)';
+        descEl.textContent = 'Enter your exact clean self-mastery streak days:';
+        inputEl.value = state.willpowerStreak;
+        quickPromptCallback = (val) => {
+          const n = parseInt(val, 10);
+          if (!isNaN(n) && n >= 0) {
+            state.willpowerStreak = n;
+            saveState();
+            renderAll();
+          }
+        };
+      } else if (targetType === 'quest') {
+        const q = state.quests.find(item => item.id === questId);
+        if (!q) return;
+        titleEl.textContent = `Set Streak: ${q.title}`;
+        descEl.textContent = 'Type the exact number of streak days for this quest:';
+        inputEl.value = q.streak;
+        quickPromptCallback = (val) => {
+          const n = parseInt(val, 10);
+          if (!isNaN(n) && n >= 0) {
+            q.streak = n;
+            saveState();
+            renderAll();
+          }
+        };
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        inputEl.focus();
+        inputEl.select();
+      }, 40);
+    }
+
+    function closeQuickPrompt() {
+      document.getElementById('quickPromptModal').classList.add('hidden');
+      quickPromptCallback = null;
+    }
+
+    function confirmQuickPrompt() {
+      const val = document.getElementById('quickPromptInput').value;
+      if (quickPromptCallback) quickPromptCallback(val);
+      closeQuickPrompt();
+    }
+
+    function completeDayAndAdvance(event) {
+      if (event) event.stopPropagation();
+      const anyDone = state.quests.some(q => q.completedToday) || state.willpowerCompletedToday || state.todayStudyMinutes > 0;
+      state.globalStreak += 1;
+
+      // Reset daily checkmarks & daily counters while keeping all streaks, XP, and total study hours intact
+      state.quests.forEach(q => {
+        q.completedToday = false;
+      });
+      state.willpowerCompletedToday = false;
+      state.todayStudyMinutes = 0;
+      state.dailyGoalBonusClaimedToday = false;
+      state.coffeeCountToday = 0;
+      state.editingQuestId = null;
+
+      playSfx('boss');
+      triggerBurstAnimation('globalStreakPill');
+      addXp(anyDone ? 100 : 25, event, `🌅 New Day! Streak ${state.globalStreak}d`);
+    }
+
+    /****************************************************************
+     * 4. INLINE QUEST EDITING, FILTERING & QUICK ADD
+     ****************************************************************/
+    function setQuestFilter(cat) {
+      state.activeFilter = cat;
+      saveState();
+      renderQuestBoard();
+    }
+
+    function handleQuickAddQuest(event) {
+      event.preventDefault();
+      const titleInput = document.getElementById('quickQuestTitle');
+      const catInput = document.getElementById('quickQuestCategory');
+      const xpInput = document.getElementById('quickQuestXp');
+
+      const title = titleInput.value.trim();
+      if (!title) return;
+
+      const category = catInput.value;
+      const xp = Math.max(10, Math.min(1000, parseInt(xpInput.value, 10) || 80));
+      const icons = { morning: '🌅', fitness: '💪', study: '📚', night: '🌙' };
+      const tags = {
+        morning: 'Morning Routine',
+        fitness: 'Physical Conditioning',
+        study: 'Study Campaign',
+        night: 'Evening Recovery'
+      };
+
+      state.quests.push({
+        id: 'q_' + Date.now(),
+        title,
+        tag: tags[category] || 'Custom Quest',
+        xp,
+        streak: 0,
+        completedToday: false,
+        repeatable: false,
+        category,
+        icon: icons[category] || '⚔️'
+      });
+
+      titleInput.value = '';
+      saveState();
+      renderAll();
+    }
+
+    function startInlineQuestEdit(questId, event) {
+      if (event) event.stopPropagation();
+      state.editingQuestId = questId;
+      renderQuestBoard();
+    }
+
+    function saveInlineQuestEdit(questId, event) {
+      if (event) event.stopPropagation();
+      const q = state.quests.find(item => item.id === questId);
+      if (q) {
+        const titleEl = document.getElementById(`edit-title-${questId}`);
+        const tagEl = document.getElementById(`edit-tag-${questId}`);
+        const xpEl = document.getElementById(`edit-xp-${questId}`);
+
+        if (titleEl && titleEl.value.trim()) q.title = titleEl.value.trim();
+        if (tagEl && tagEl.value.trim()) q.tag = tagEl.value.trim();
+        if (xpEl) q.xp = Math.max(5, parseInt(xpEl.value, 10) || q.xp);
+      }
+      state.editingQuestId = null;
+      saveState();
+      renderAll();
+    }
+
+    function deleteQuestItem(questId, event) {
+      if (event) event.stopPropagation();
+      state.quests = state.quests.filter(item => item.id !== questId);
+      if (state.editingQuestId === questId) state.editingQuestId = null;
+      saveState();
+      renderAll();
+    }
+
+    /****************************************************************
+     * 5. BRACKET STUDY HOURS LOGGER, DAILY GOAL & ACHIEVEMENTS
+     ****************************************************************/
+    function adjustDailyStudyGoal(delta) {
+      const nextVal = Math.max(0.5, Math.min(18, Math.round((state.dailyStudyGoalHours + delta) * 2) / 2));
+      state.dailyStudyGoalHours = nextVal;
+      checkAndUnlockStudyAchievements();
+      saveState();
+      renderAll();
+    }
+
+    function setDailyStudyGoalDirect(val) {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 18) {
+        state.dailyStudyGoalHours = Math.round(parsed * 4) / 4;
+      }
+      checkAndUnlockStudyAchievements();
+      saveState();
+      renderAll();
+    }
+
+    function handleBracketStudySubmit(event) {
+      event.preventDefault();
+      const hrsInput = document.getElementById('bracketStudyHoursInput');
+      const topicInput = document.getElementById('bracketStudyTopicInput');
+
+      const hrs = parseFloat(hrsInput.value);
+      if (isNaN(hrs) || hrs <= 0 || hrs > 18) return;
+
+      const topic = topicInput.value.trim() || 'Logged Study Session';
+      logStudyHoursCore(hrs, topic, event);
+      topicInput.value = '';
+    }
+
+    function quickLogBracketHours(hrs, event) {
+      if (event) event.stopPropagation();
+      document.getElementById('bracketStudyHoursInput').value = hrs;
+      const topicInput = document.getElementById('bracketStudyTopicInput');
+      const topic = (topicInput && topicInput.value.trim())
+        ? topicInput.value.trim()
+        : `Bracket Study [+${hrs}h]`;
+      logStudyHoursCore(hrs, topic, event);
+      if (topicInput) topicInput.value = '';
+    }
+
+    function logStudyHoursCore(hrs, topic, event = null) {
+      const mins = Math.round(hrs * 60);
+      let earnedXp = Math.round(hrs * 120);
+
+      state.totalStudyMinutes += mins;
+      state.todayStudyMinutes += mins;
+
+      // Check if Daily Study Goal is reached for the first time today
+      let hitGoalNow = false;
+      if (!state.dailyGoalBonusClaimedToday && (state.todayStudyMinutes / 60) >= state.dailyStudyGoalHours) {
+        state.dailyGoalBonusClaimedToday = true;
+        earnedXp += 200;
+        hitGoalNow = true;
+      }
+
+      state.studyLogs.unshift({
+        id: Date.now(),
+        topic,
+        hours: hrs,
+        minutes: mins,
+        xp: earnedXp,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      if (state.studyLogs.length > 25) state.studyLogs.pop();
+
+      // Auto-complete the Long Study Quest if not yet done today
+      const studyQuest = state.quests.find(q => q.id === 'q_long_study');
+      if (studyQuest && !studyQuest.completedToday) {
+        studyQuest.completedToday = true;
+        studyQuest.streak += 1;
+      }
+
+      const newlyUnlockedXp = checkAndUnlockStudyAchievements(event);
+      playSfx(hitGoalNow || newlyUnlockedXp > 0 ? 'boss' : 'streak');
+
+      const popupLabel = hitGoalNow
+        ? `🏆 GOAL MET! (+${hrs}h)`
+        : `📚 Logged [${hrs}h]`;
+
+      addXp(earnedXp + newlyUnlockedXp, event, popupLabel);
+    }
+
+    function deleteStudyLogEntry(logId, event) {
+      if (event) event.stopPropagation();
+      const idx = state.studyLogs.findIndex(item => item.id === logId);
+      if (idx === -1) return;
+
+      const entry = state.studyLogs[idx];
+      if (entry.minutes > 0) {
+        state.totalStudyMinutes = Math.max(0, state.totalStudyMinutes - entry.minutes);
+        state.todayStudyMinutes = Math.max(0, state.todayStudyMinutes - entry.minutes);
+      }
+      state.studyLogs.splice(idx, 1);
+      addXp(-entry.xp, event, 'Removed Log');
+    }
+
+    function checkAndUnlockStudyAchievements(event = null) {
+      let achievementBonusXp = 0;
+      STUDY_ACHIEVEMENTS.forEach(ach => {
+        if (!state.unlockedAchievements.includes(ach.id) && ach.check(state)) {
+          state.unlockedAchievements.push(ach.id);
+          achievementBonusXp += ach.xpReward;
+        }
+      });
+      return achievementBonusXp;
+    }
+
+    function drinkEmergencyCoffee(event) {
+      if (event) event.stopPropagation();
+      state.coffeeCountToday += 1;
+      state.totalCoffeeCount = (state.totalCoffeeCount || 0) + 1;
+
+      const coffeeQuest = state.quests.find(q => q.id === 'q_sleepy_coffee');
+      if (coffeeQuest) {
+        coffeeQuest.completedToday = true;
+        coffeeQuest.streak += 1;
+      }
+
+      const overlay = document.getElementById('coffeeFlashOverlay');
+      overlay.classList.remove('hidden', 'mana-flash');
+      void overlay.offsetWidth;
+      overlay.classList.add('mana-flash');
+      setTimeout(() => overlay.classList.add('hidden'), 650);
+
+      state.studyLogs.unshift({
+        id: Date.now(),
+        topic: '☕ Emergency Coffee Mana Refill',
+        hours: 0,
+        minutes: 0,
+        xp: 30,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+
+      const achXp = checkAndUnlockStudyAchievements(event);
+      playSfx('streak');
+      addXp(30 + achXp, event, '☕ Mana Refilled!');
+    }
+
+    /****************************************************************
+     * 6. HERO PROFILE CUSTOMIZATION
+     ****************************************************************/
+    function cycleAvatar() {
+      state.avatarIndex = (state.avatarIndex + 1) % AVATARS.length;
+      saveState();
+      renderHeroHeader();
+    }
+
+    function enableHeroNameEdit() {
+      const display = document.getElementById('heroNameDisplay');
+      const input = document.getElementById('heroNameInput');
+      display.classList.add('hidden');
+      input.classList.remove('hidden');
+      input.value = state.heroName;
+      input.focus();
+      input.select();
+    }
+
+    function saveHeroNameEdit() {
+      const display = document.getElementById('heroNameDisplay');
+      const input = document.getElementById('heroNameInput');
+      if (input.value.trim()) {
+        state.heroName = input.value.trim();
+        saveState();
+      }
+      input.classList.add('hidden');
+      display.classList.remove('hidden');
+      renderHeroHeader();
+    }
+
+    /****************************************************************
+     * 7. RENDER FUNCTIONS
+     ****************************************************************/
+    function renderHeroHeader() {
+      const lvInfo = calculateLevel(state.totalXp);
+      document.getElementById('heroAvatarEmoji').textContent = AVATARS[state.avatarIndex % AVATARS.length];
+      document.getElementById('heroNameDisplay').textContent = state.heroName;
+      document.getElementById('heroLevelBadge').textContent = lvInfo.level;
+      document.getElementById('heroRankTitle').textContent = lvInfo.rank;
+
+      document.getElementById('statTotalXp').textContent = state.totalXp.toLocaleString();
+      document.getElementById('currentLevelXp').textContent = lvInfo.currentXp;
+      document.getElementById('nextLevelXp').textContent = lvInfo.nextXp;
+      document.getElementById('xpProgressBar').style.width = `${lvInfo.pct}%`;
+
+      document.getElementById('globalStreakText').textContent = state.globalStreak;
+    }
+
+    function renderBossBanner() {
+      const nextReward = getBossXpReward(state.willpowerStreak + (state.willpowerCompletedToday ? 0 : 1));
+      document.getElementById('bossRewardBadge').textContent = `+${nextReward} XP`;
+      document.getElementById('bossStreakNumber').textContent = state.willpowerStreak;
+
+      const btn = document.getElementById('bossClaimBtn');
+      const icon = document.getElementById('bossClaimIcon');
+      const title = document.getElementById('bossClaimTitle');
+      const sub = document.getElementById('bossClaimSub');
+
+      if (state.willpowerCompletedToday) {
+        btn.className = 'h-full min-h-[60px] px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-lg shadow-emerald-500/10';
+        icon.className = 'fa-solid fa-circle-check text-xl text-emerald-400 check-pop';
+        title.textContent = 'Clean Day Claimed!';
+        sub.textContent = `Streak: ${state.willpowerStreak} Days • Click to undo`;
+      } else {
+        btn.className = 'h-full min-h-[60px] px-5 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-lg shadow-amber-500/25';
+        icon.className = 'fa-solid fa-shield-halved text-lg';
+        title.textContent = 'Claim Clean Day';
+        sub.textContent = `+${nextReward} XP & +1 Streak`;
+      }
+
+      const milestonesEl = document.getElementById('willpowerMilestoneRow');
+      milestonesEl.innerHTML = WILLPOWER_MILESTONES.map(m => {
+        const achieved = state.willpowerStreak >= m.days;
+        return `
+          <span class="px-2 py-0.5 rounded text-[11px] font-mono border flex items-center gap-1 ${
+            achieved
+              ? 'bg-amber-500/20 border-amber-400/50 text-amber-200 font-semibold'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }">
+            ${achieved ? '<i class="fa-solid fa-check text-emerald-400 text-[9px]"></i>' : '<i class="fa-solid fa-lock text-[9px]"></i>'}
+            <span>${m.name}</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function renderQuestBoard() {
+      ['all', 'morning', 'fitness', 'study'].forEach(tab => {
+        const el = document.getElementById('tab-' + tab);
+        if (!el) return;
+        el.className = state.activeFilter === tab
+          ? 'px-3 py-1.5 rounded-lg font-semibold bg-sky-500 text-slate-950 transition shadow-sm'
+          : 'px-3 py-1.5 rounded-lg font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition';
+      });
+
+      const totalQuests = state.quests.length;
+      const doneQuests = state.quests.filter(q => q.completedToday).length;
+      const donePct = totalQuests > 0 ? Math.round((doneQuests / totalQuests) * 100) : 0;
+      document.getElementById('dailyQuestProgressText').textContent = `${doneQuests}/${totalQuests}`;
+      document.getElementById('dailyQuestProgressBar').style.width = `${donePct}%`;
+
+      const listEl = document.getElementById('questBoardList');
+      const visibleQuests = state.quests.filter(q =>
+        state.activeFilter === 'all' ? true : q.category === state.activeFilter
+      );
+
+      listEl.innerHTML = visibleQuests.map(q => {
+        const isEditing = state.editingQuestId === q.id;
+
+        if (isEditing) {
+          return `
+            <div class="rounded-xl p-3 bg-slate-900 border border-sky-500/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input id="edit-title-${q.id}" type="text" value="${q.title.replace(/"/g, '&quot;')}" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs sm:text-sm text-white outline-none focus:border-sky-400" placeholder="Quest Title" />
+              <input id="edit-tag-${q.id}" type="text" value="${(q.tag || '').replace(/"/g, '&quot;')}" class="sm:w-40 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 outline-none focus:border-sky-400" placeholder="Time / Subtitle" />
+              <div class="flex items-center gap-1.5">
+                <input id="edit-xp-${q.id}" type="number" value="${q.xp}" class="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono text-amber-400 outline-none" />
+                <button onclick="saveInlineQuestEdit('${q.id}', event)" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs">Save</button>
+                <button onclick="deleteQuestItem('${q.id}', event)" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-xs" title="Delete Quest">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div
+            oncontextmenu="handleQuestRightClick(event, '${q.id}')"
+            onclick="toggleQuestRow('${q.id}', event)"
+            class="quest-row ${q.completedToday ? 'completed-row' : 'bg-slate-950/85 border-slate-800/90'} border rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 cursor-pointer group"
+          >
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition ${
+                q.completedToday
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/25 check-pop'
+                  : 'bg-slate-900 border border-slate-700 group-hover:border-sky-400 text-transparent'
+              }">
+                <i class="fa-solid fa-check text-xs font-extrabold"></i>
+              </div>
+
+              <span class="text-lg sm:text-xl shrink-0">${q.icon}</span>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold text-xs sm:text-sm transition ${
+                    q.completedToday ? 'line-through text-slate-400' : 'text-slate-100 group-hover:text-white'
+                  } truncate">
+                    ${q.title}
+                  </span>
+                  ${
+                    q.repeatable
+                      ? '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Repeatable</span>'
+                      : ''
+                  }
+                </div>
+                <div class="text-[11px] text-slate-500 font-mono truncate">${q.tag || 'Daily Routine'}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
+              <span class="text-[11px] font-mono font-bold px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-sky-300">
+                +${q.xp} XP
+              </span>
+
+              <div
+                id="streak-pill-${q.id}"
+                oncontextmenu="handleQuestRightClick(event, '${q.id}')"
+                class="flex items-center bg-slate-900 border ${
+                  q.streak > 0 ? 'border-amber-500/45 text-amber-300' : 'border-slate-800 text-slate-400'
+                } rounded-lg px-1.5 py-1 gap-1 transition"
+                title="Right-click for +1 Streak • Click number to type exact days"
+              >
+                <button
+                  onclick="adjustQuestStreak('${q.id}', -1, event)"
+                  class="w-4 h-4 rounded hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center text-[9px] transition"
+                  title="Decrease Streak (-1)"
+                >
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+
+                <div
+                  onclick="promptEditStreak('quest', '${q.id}', event)"
+                  class="flex items-center gap-1 px-1 cursor-pointer hover:text-white"
+                >
+                  <i class="fa-solid fa-fire text-[11px] ${q.streak > 0 ? 'text-amber-400' : 'text-slate-600'}"></i>
+                  <span class="font-mono font-bold text-xs">${q.streak}d</span>
+                </div>
+
+                <button
+                  onclick="adjustQuestStreak('${q.id}', 1, event)"
+                  class="w-4 h-4 rounded hover:bg-amber-500/30 text-amber-400 flex items-center justify-center text-[9px] transition"
+                  title="Increase Streak (+1 Day & Bonus XP)"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+
+              <button
+                onclick="startInlineQuestEdit('${q.id}', event)"
+                class="w-7 h-7 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-slate-900 flex items-center justify-center transition opacity-70 group-hover:opacity-100"
+                title="Edit Quest Name or XP"
+              >
+                <i class="fa-solid fa-pen text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStudyDashboard() {
+      document.getElementById('coffeeCountLabel').textContent = state.coffeeCountToday;
+
+      const todayHrsNum = state.todayStudyMinutes / 60;
+      const todayHrs = todayHrsNum.toFixed(1);
+      const totalHrs = (state.totalStudyMinutes / 60).toFixed(1);
+      const goalHrs = state.dailyStudyGoalHours.toFixed(1);
+      const goalPct = Math.min(100, Math.round((todayHrsNum / state.dailyStudyGoalHours) * 100));
+
+      const bracketGoalInput = document.getElementById('dailyGoalBracketInput');
+      if (bracketGoalInput && document.activeElement !== bracketGoalInput) {
+        bracketGoalInput.value = goalHrs;
+      }
+
+      document.getElementById('studyDailyGoalText').textContent = goalHrs;
+      document.getElementById('todayStudiedHoursBig').textContent = todayHrs;
+      document.getElementById('studyGoalPctLabel').textContent = `${goalPct}%`;
+      document.getElementById('todayStudyGoalBar').style.width = `${goalPct}%`;
+      document.getElementById('totalStudiedHoursBig').textContent = totalHrs;
+
+      const goalBanner = document.getElementById('dailyGoalClearedBanner');
+      if (todayHrsNum >= state.dailyStudyGoalHours) {
+        goalBanner.classList.remove('hidden');
+      } else {
+        goalBanner.classList.add('hidden');
+      }
+
+      const fullHrs = Math.floor(state.totalStudyMinutes / 60);
+      const remMins = state.totalStudyMinutes % 60;
+      document.getElementById('totalStudiedMinutesSub').textContent = `${fullHrs}h ${remMins}m total logged`;
+
+      // Render Scholar Achievements Grid
+      const unlockedCount = STUDY_ACHIEVEMENTS.filter(a => state.unlockedAchievements.includes(a.id)).length;
+      document.getElementById('studyAchievementsCounter').textContent = `${unlockedCount} / ${STUDY_ACHIEVEMENTS.length} Unlocked`;
+
+      const achGrid = document.getElementById('studyAchievementsGrid');
+      achGrid.innerHTML = STUDY_ACHIEVEMENTS.map(ach => {
+        const unlocked = state.unlockedAchievements.includes(ach.id);
+        return `
+          <div class="rounded-xl p-2.5 border transition flex items-center gap-2.5 ${
+            unlocked
+              ? 'bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-950 border-amber-400/50 text-white shadow-sm'
+              : 'bg-slate-950/60 border-slate-800/80 text-slate-500 opacity-65'
+          }">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 ${
+              unlocked ? 'bg-amber-500/20 border border-amber-400/40' : 'bg-slate-900 border border-slate-800 grayscale'
+            }">
+              ${ach.icon}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-bold text-[11px] truncate ${unlocked ? 'text-amber-200' : 'text-slate-400'}">${ach.title}</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                  unlocked ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-900 text-slate-500'
+                }">+${ach.xpReward} XP</span>
+              </div>
+              <div class="text-[10px] truncate ${unlocked ? 'text-slate-300' : 'text-slate-500'}">${ach.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Recent Study History Log
+      const logEl = document.getElementById('studyLogHistoryList');
+      if (state.studyLogs.length === 0) {
+        logEl.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-2">No study hours logged yet. Enter your hours in the bracket above!</div>`;
+      } else {
+        logEl.innerHTML = state.studyLogs.slice(0, 8).map(item => {
+          const hrsDisplay = item.hours ? `[${item.hours}h]` : (item.minutes > 0 ? `[${(item.minutes / 60).toFixed(1)}h]` : '');
+          return `
+            <div class="flex items-center justify-between text-[11px] bg-slate-950/90 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+              <div class="truncate pr-2 flex items-center gap-1.5">
+                ${hrsDisplay ? `<span class="font-mono font-bold text-sky-400">${hrsDisplay}</span>` : ''}
+                <span class="text-slate-200 font-medium truncate">${item.topic}</span>
+                <span class="text-slate-500 font-mono text-[10px]">${item.time}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 font-mono">
+                <span class="text-amber-400">+${item.xp} XP</span>
+                <button
+                  onclick="deleteStudyLogEntry(${item.id}, event)"
+                  class="text-slate-600 hover:text-rose-400 transition"
+                  title="Undo / Remove this log"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderRoutineBlueprint() {
+      const stages = [
+        { time: '06:30 AM', title: 'Sattu + Coffee', sub: 'Morning Buff', questId: 'q_sattu_coffee', icon: '🌅' },
+        { time: '07:30 AM', title: 'School Hours', sub: 'Classroom Focus', questId: null, icon: '🏫' },
+        { time: '03:30 PM', title: '30m Workout', sub: 'Post-School Stamina', questId: 'q_workout', icon: '💪' },
+        { time: '05:00 PM', title: 'Long Study', sub: '+Coffee if Sleepy', questId: 'q_long_study', icon: '📚' },
+        { time: '09:30 PM', title: 'Iron Willpower', sub: 'Boss Streak Check', questId: 'boss', icon: '🛡️' }
+      ];
+
+      const grid = document.getElementById('routineBlueprintGrid');
+      grid.innerHTML = stages.map(s => {
+        let done = false;
+        if (s.questId === 'boss') done = state.willpowerCompletedToday;
+        else if (s.questId) {
+          const q = state.quests.find(item => item.id === s.questId);
+          done = q ? q.completedToday : false;
+        }
+
+        const clickAttr = s.questId === 'boss'
+          ? 'toggleBossCompletedToday(event)'
+          : (s.questId ? `toggleQuestRow('${s.questId}', event)` : '');
+
+        return `
+          <div
+            onclick="${clickAttr}"
+            class="rounded-xl p-3 border transition flex items-center justify-between gap-2 ${
+              done
+                ? 'bg-emerald-950/25 border-emerald-500/50 text-emerald-200'
+                : 'bg-slate-950/80 border-slate-800/90 text-slate-300'
+            } ${clickAttr ? 'cursor-pointer hover:border-sky-400/60' : ''}"
+          >
+            <div class="min-w-0">
+              <div class="text-[10px] font-mono text-slate-400">${s.time}</div>
+              <div class="font-bold text-xs sm:text-sm text-white truncate">${s.title}</div>
+              <div class="text-[11px] text-slate-400 truncate">${s.sub}</div>
+            </div>
+            <div class="text-xl shrink-0">
+              ${done ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' : s.icon}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderAll() {
+      checkAndUnlockStudyAchievements();
+      renderHeroHeader();
+      renderBossBanner();
+      renderQuestBoard();
+      renderStudyDashboard();
+      renderRoutineBlueprint();
+
+      const soundIcon = document.getElementById('soundIcon');
+      if (soundIcon) {
+        soundIcon.className = state.soundEnabled
+          ? 'fa-solid fa-volume-high text-xs'
+          : 'fa-solid fa-volume-xmark text-xs text-slate-500';
+      }
+    }
+
+    // Automatically save state before page unload or when switching tabs on mobile/desktop
+    window.addEventListener('beforeunload', () => {
+      saveState();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        saveState();
+      }
+    });
+
+    window.onload = function () {
+      loadState();
+      renderAll();
+    };
+  </script>
+</body>
+</html>
